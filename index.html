@@ -1,0 +1,1481 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ANAROCK | MMRDA Digital Infrastructure for the Built World</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;500;600;700;800;900&display=swap');
+
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --purple: #984F8F;
+    --purple-dark: #7A3E73;
+    --purple-deeper: #5C2E56;
+    --purple-glow: rgba(152,79,143,0.3);
+    --gold: #C9A84C;
+    --gold-light: #E8D5A0;
+    --gold-glow: rgba(201,168,76,0.25);
+    --black: #0A0A0A;
+    --gray-900: #1A1A1A;
+    --gray-800: #2A2A2A;
+    --gray-700: #4A4A4A;
+    --gray-600: #6A6A6A;
+    --gray-400: #9A9A9A;
+    --gray-200: #D5D5D5;
+    --gray-100: #EDEDED;
+    --white: #FFFFFF;
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: var(--black);
+    color: var(--white);
+    overflow-x: hidden;
+  }
+
+  #loader {
+    position: fixed; inset: 0; z-index: 9999;
+    background: var(--black);
+    display: flex; align-items: center; justify-content: center;
+    flex-direction: column; gap: 24px;
+    transition: opacity 0.8s ease, visibility 0.8s ease;
+  }
+  #loader.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
+  #loader .spinner {
+    width: 3px; height: 48px;
+    background: linear-gradient(to top, var(--purple), var(--gold));
+    border-radius: 4px;
+    animation: loaderPulse 1.2s ease-in-out infinite;
+  }
+  @keyframes loaderPulse {
+    0%, 100% { transform: scaleY(0.4); opacity: 0.4; }
+    50% { transform: scaleY(1); opacity: 1; }
+  }
+  #loader p { font-size: 11px; color: var(--gray-700); letter-spacing: 3px; text-transform: uppercase; font-weight: 500; }
+
+  #canvas-container {
+    position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+    z-index: 0; pointer-events: none;
+  }
+
+  .scroll-container {
+    position: relative; z-index: 1;
+    pointer-events: none;
+  }
+  .scroll-container > * { pointer-events: auto; }
+
+  .hero {
+    min-height: 100vh;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    position: relative;
+    padding: 40px;
+  }
+  .hero-inner { text-align: center; max-width: 980px; }
+
+  .hero-badge {
+    display: inline-block;
+    border: 1px solid rgba(152,79,143,0.3);
+    color: var(--purple);
+    font-size: 11px; font-weight: 600; letter-spacing: 2px; text-transform: uppercase;
+    padding: 8px 20px; border-radius: 100px;
+    margin-bottom: 32px;
+    background: rgba(152,79,143,0.06);
+    backdrop-filter: blur(10px);
+  }
+
+  .hero-logo {
+    margin-bottom: 32px;
+    display: inline-block;
+  }
+  .hero-logo svg {
+    height: 68px; width: auto;
+    filter: drop-shadow(0 0 40px rgba(152,79,143,0.2));
+  }
+  .hero-logo svg path { fill: var(--white); }
+  .hero-logo svg path.accent { fill: var(--purple); }
+
+  .hero h1 {
+    font-size: clamp(36px, 6vw, 72px);
+    font-weight: 800;
+    line-height: 1.06;
+    letter-spacing: -2px;
+    margin-bottom: 20px;
+  }
+  .hero h1 .gradient-text {
+    background: linear-gradient(135deg, var(--white) 0%, #c084b8 40%, var(--gold) 100%);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .hero p {
+    font-size: 16px; color: var(--gray-400);
+    line-height: 1.7; max-width: 620px; margin: 0 auto 40px;
+    font-weight: 300; letter-spacing: 0.3px;
+  }
+  .hero-scroll-indicator {
+    position: absolute; bottom: 40px; left: 50%; transform: translateX(-50%);
+    display: flex; flex-direction: column; align-items: center; gap: 8px;
+    color: var(--gray-700); font-size: 10px; letter-spacing: 2px; text-transform: uppercase;
+    animation: floatUp 2s ease-in-out infinite;
+  }
+  .hero-scroll-indicator .line {
+    width: 1px; height: 40px;
+    background: linear-gradient(to bottom, var(--purple), transparent);
+  }
+  @keyframes floatUp {
+    0%, 100% { transform: translateX(-50%) translateY(0); }
+    50% { transform: translateX(-50%) translateY(-6px); }
+  }
+
+  .section-header {
+    padding: 120px 40px 60px;
+    text-align: center;
+    position: relative;
+  }
+  .section-header h2 {
+    font-size: clamp(28px, 4vw, 48px);
+    font-weight: 800;
+    letter-spacing: -1.5px;
+    margin-bottom: 16px;
+  }
+  .section-header p {
+    color: var(--gray-400);
+    max-width: 720px; margin: 0 auto;
+    font-size: 15px; line-height: 1.7;
+  }
+
+  /* === REGIONAL SOLUTIONS === */
+  .regional-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 20px;
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 0 40px 80px;
+  }
+  .regional-card {
+    background: linear-gradient(145deg, rgba(26,26,26,0.9), rgba(10,10,10,0.95));
+    border: 1px solid rgba(152,79,143,0.12);
+    border-radius: 16px;
+    padding: 28px;
+    transition: all 0.35s ease;
+    position: relative;
+    overflow: hidden;
+  }
+  .regional-card::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0; height: 2px;
+    background: linear-gradient(90deg, var(--purple), var(--gold));
+    opacity: 0.5;
+  }
+  .regional-card:hover {
+    transform: translateY(-6px);
+    border-color: rgba(152,79,143,0.3);
+    box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+  }
+  .regional-card .icon {
+    width: 44px; height: 44px;
+    border-radius: 12px;
+    background: rgba(152,79,143,0.1);
+    display: flex; align-items: center; justify-content: center;
+    margin-bottom: 18px;
+    font-size: 20px;
+  }
+  .regional-card h3 {
+    font-size: 18px; font-weight: 700;
+    margin-bottom: 10px;
+    letter-spacing: -0.3px;
+  }
+  .regional-card p {
+    font-size: 13px; color: var(--gray-400);
+    line-height: 1.65; font-weight: 300;
+  }
+  .regional-card .tags {
+    display: flex; flex-wrap: wrap; gap: 6px;
+    margin-top: 16px;
+  }
+  .regional-card .tags span {
+    font-size: 10px; font-weight: 500;
+    padding: 4px 10px; border-radius: 100px;
+    background: rgba(152,79,143,0.08);
+    color: #c084b8;
+    border: 1px solid rgba(152,79,143,0.12);
+    letter-spacing: 0.5px; text-transform: uppercase;
+  }
+
+  /* === MOCKUP SECTIONS === */
+  .mockup-section {
+    padding: 100px 40px;
+    position: relative;
+  }
+  .mockup-container {
+    max-width: 1280px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 60px;
+    align-items: center;
+  }
+  .mockup-section:nth-child(even) .mockup-container {
+    direction: rtl;
+  }
+  .mockup-section:nth-child(even) .mockup-content,
+  .mockup-section:nth-child(even) .mockup-visual {
+    direction: ltr;
+  }
+  .mockup-content .module-tag {
+    display: inline-block;
+    font-size: 11px; font-weight: 600; letter-spacing: 2px; text-transform: uppercase;
+    color: var(--purple);
+    margin-bottom: 12px;
+    padding: 6px 14px;
+    border: 1px solid rgba(152,79,143,0.2);
+    border-radius: 100px;
+    background: rgba(152,79,143,0.06);
+  }
+  .mockup-content h2 {
+    font-size: clamp(26px, 3.5vw, 40px);
+    font-weight: 800;
+    line-height: 1.1;
+    letter-spacing: -1px;
+    margin-bottom: 16px;
+  }
+  .mockup-content .tagline {
+    color: var(--gold-light);
+    font-size: 15px;
+    font-weight: 500;
+    margin-bottom: 20px;
+    font-style: italic;
+  }
+  .mockup-content p {
+    font-size: 14px; color: var(--gray-400);
+    line-height: 1.7; font-weight: 300;
+    margin-bottom: 24px;
+  }
+  .mockup-features {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 28px;
+  }
+  .mockup-features li {
+    list-style: none;
+    font-size: 13px;
+    color: var(--gray-200);
+    padding-left: 20px;
+    position: relative;
+    line-height: 1.5;
+  }
+  .mockup-features li::before {
+    content: '';
+    position: absolute; left: 0; top: 6px;
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--purple);
+  }
+  .mockup-cta {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: var(--white); color: var(--black);
+    padding: 14px 28px; border-radius: 8px;
+    text-decoration: none; font-weight: 700; font-size: 13px;
+    transition: all 0.3s;
+  }
+  .mockup-cta:hover { transform: translateY(-2px); box-shadow: 0 12px 40px rgba(255,255,255,0.08); }
+
+  .mockup-visual {
+    position: relative;
+    border-radius: 20px;
+    overflow: hidden;
+    background: linear-gradient(145deg, rgba(20,20,25,0.95), rgba(8,8,10,0.98));
+    border: 1px solid rgba(152,79,143,0.15);
+    box-shadow: 0 40px 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.04);
+    aspect-ratio: 4/3;
+  }
+  .mockup-visual::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: radial-gradient(circle at 30% 20%, rgba(152,79,143,0.12), transparent 50%);
+    pointer-events: none;
+  }
+  .mockup-screen {
+    position: absolute; inset: 0;
+    padding: 24px;
+    display: flex; flex-direction: column;
+  }
+  .mockup-topbar {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 20px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+  }
+  .mockup-topbar .logo-pill {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 12px; font-weight: 700;
+    color: var(--white);
+  }
+  .mockup-topbar .logo-pill .dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--purple);
+  }
+  .mockup-topbar .nav-pills {
+    display: flex; gap: 8px;
+  }
+  .mockup-topbar .nav-pills span {
+    font-size: 10px; color: var(--gray-400);
+    padding: 4px 10px;
+    background: rgba(255,255,255,0.03);
+    border-radius: 100px;
+  }
+  .mockup-topbar .nav-pills span.active {
+    background: rgba(152,79,143,0.15);
+    color: var(--white);
+  }
+  .approval-dashboard {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    flex: 1;
+  }
+  .approval-card {
+    background: rgba(255,255,255,0.03);
+    border-radius: 12px;
+    padding: 14px;
+    border: 1px solid rgba(255,255,255,0.04);
+  }
+  .approval-card .auth {
+    font-size: 11px; color: var(--gray-400); text-transform: uppercase; letter-spacing: 0.5px;
+    margin-bottom: 6px;
+  }
+  .approval-card .status {
+    display: inline-block;
+    font-size: 10px; font-weight: 600;
+    padding: 3px 8px; border-radius: 100px;
+    margin-bottom: 10px;
+  }
+  .approval-card .status.green { background: rgba(34,197,94,0.12); color: #4ade80; }
+  .approval-card .status.amber { background: rgba(234,179,8,0.12); color: #facc15; }
+  .approval-card .status.red { background: rgba(239,68,68,0.12); color: #f87171; }
+  .approval-card .title { font-size: 13px; font-weight: 600; margin-bottom: 4px; }
+  .approval-card .meta { font-size: 11px; color: var(--gray-600); }
+  .approval-card .progress-bar {
+    height: 3px; background: rgba(255,255,255,0.06);
+    border-radius: 2px; margin-top: 12px; overflow: hidden;
+  }
+  .approval-card .progress-bar .fill {
+    height: 100%; border-radius: 2px;
+    background: linear-gradient(90deg, var(--purple), var(--gold));
+  }
+  .crm-layout {
+    display: grid;
+    grid-template-columns: 1fr 1.3fr;
+    gap: 16px;
+    flex: 1;
+  }
+  .crm-sidebar {
+    background: rgba(255,255,255,0.03);
+    border-radius: 12px;
+    padding: 16px;
+  }
+  .crm-sidebar .stat { margin-bottom: 16px; }
+  .crm-sidebar .stat-value {
+    font-size: 24px; font-weight: 800;
+    background: linear-gradient(135deg, var(--white), var(--gold));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  }
+  .crm-sidebar .stat-label {
+    font-size: 11px; color: var(--gray-500); text-transform: uppercase; letter-spacing: 0.5px;
+  }
+  .crm-leads {
+    display: flex; flex-direction: column; gap: 10px;
+  }
+  .lead-row {
+    display: flex; align-items: center; gap: 10px;
+    background: rgba(255,255,255,0.04);
+    padding: 12px;
+    border-radius: 10px;
+    border: 1px solid rgba(255,255,255,0.04);
+  }
+  .lead-row .avatar {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--purple), var(--gold));
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 700;
+  }
+  .lead-row .info { flex: 1; }
+  .lead-row .name { font-size: 12px; font-weight: 600; }
+  .lead-row .detail { font-size: 10px; color: var(--gray-500); }
+  .lead-row .score {
+    font-size: 11px; font-weight: 700;
+    padding: 4px 8px; border-radius: 6px;
+    background: rgba(152,79,143,0.15);
+    color: #c084b8;
+  }
+  .platform-screen {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    flex: 1;
+  }
+  .platform-card {
+    background: rgba(255,255,255,0.03);
+    border-radius: 12px;
+    padding: 16px;
+    border: 1px solid rgba(255,255,255,0.04);
+    display: flex; flex-direction: column;
+  }
+  .platform-card.wide { grid-column: span 2; }
+  .platform-card .card-title {
+    font-size: 11px; color: var(--gray-500); text-transform: uppercase; letter-spacing: 0.5px;
+    margin-bottom: 12px;
+  }
+  .platform-card .metric {
+    font-size: 28px; font-weight: 800; margin-bottom: 4px;
+  }
+  .platform-card .change {
+    font-size: 11px; color: #4ade80;
+  }
+  .platform-card .mini-chart {
+    flex: 1;
+    display: flex; align-items: flex-end; gap: 4px;
+    margin-top: 12px;
+  }
+  .platform-card .mini-chart .bar {
+    flex: 1;
+    background: linear-gradient(to top, var(--purple), rgba(152,79,143,0.2));
+    border-radius: 2px 2px 0 0;
+  }
+  .higgsfield-badge {
+    display: inline-flex; align-items: center; gap: 10px;
+    background: rgba(152,79,143,0.08);
+    border: 1px solid rgba(152,79,143,0.2);
+    border-radius: 100px;
+    padding: 8px 18px;
+    font-size: 11px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase;
+    color: #c084b8;
+  }
+  .higgsfield-badge .pulse {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--purple);
+    animation: pulse 1.5s ease-in-out infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 0.4; transform: scale(0.8); }
+    50% { opacity: 1; transform: scale(1.2); }
+  }
+
+  @media (max-width: 968px) {
+    .mockup-container { grid-template-columns: 1fr; gap: 40px; }
+    .mockup-section:nth-child(even) .mockup-container { direction: ltr; }
+    .mockup-features { grid-template-columns: 1fr; }
+    .platform-screen { grid-template-columns: 1fr; }
+    .platform-card.wide { grid-column: span 1; }
+    .approval-dashboard { grid-template-columns: 1fr; }
+    .crm-layout { grid-template-columns: 1fr; }
+    .regional-grid { grid-template-columns: 1fr; }
+  }
+
+  .building-section {
+    min-height: 100vh;
+    display: flex; align-items: center;
+    padding: 80px 40px;
+    position: relative;
+  }
+  .building-section:first-of-type { min-height: 60vh; }
+  .building-section:last-of-type { min-height: 80vh; }
+
+  .section-content {
+    max-width: 520px;
+    position: relative;
+  }
+  .section-content.left { margin-right: auto; padding-left: 60px; }
+  .section-content.right { margin-left: auto; padding-right: 60px; text-align: right; }
+
+  .section-number {
+    font-size: 72px; font-weight: 900;
+    color: rgba(152,79,143,0.08);
+    line-height: 1; margin-bottom: -8px;
+    letter-spacing: -4px;
+  }
+  .section-tag {
+    display: inline-block;
+    font-size: 11px; font-weight: 600; letter-spacing: 2px; text-transform: uppercase;
+    color: var(--purple);
+    margin-bottom: 12px;
+  }
+  .section-content h2 {
+    font-size: 28px; font-weight: 700;
+    line-height: 1.2; margin-bottom: 16px;
+    letter-spacing: -0.5px;
+  }
+  .section-content p {
+    font-size: 14px; color: var(--gray-400);
+    line-height: 1.7; font-weight: 300;
+    margin-bottom: 20px;
+  }
+  .section-tags {
+    display: flex; flex-wrap: wrap; gap: 6px;
+  }
+  .section-content.right .section-tags { justify-content: flex-end; }
+  .section-tags span {
+    font-size: 10px; font-weight: 500;
+    padding: 4px 12px; border-radius: 100px;
+    background: rgba(152,79,143,0.1);
+    color: var(--purple-light);
+    border: 1px solid rgba(152,79,143,0.15);
+    letter-spacing: 0.5px; text-transform: uppercase;
+  }
+  .section-tags span.gold {
+    background: rgba(201,168,76,0.1);
+    color: var(--gold-light);
+    border-color: rgba(201,168,76,0.15);
+  }
+
+  .section-divider {
+    width: 1px; height: 80px;
+    background: linear-gradient(to bottom, var(--purple), transparent);
+    margin: 0 auto;
+  }
+
+  .cta-section {
+    min-height: 70vh;
+    display: flex; align-items: center; justify-content: center;
+    text-align: center;
+    padding: 80px 40px;
+    position: relative;
+  }
+  .cta-section h2 {
+    font-size: clamp(28px, 4vw, 48px);
+    font-weight: 800;
+    letter-spacing: -1.5px;
+    margin-bottom: 16px;
+    line-height: 1.15;
+  }
+  .cta-section p {
+    color: var(--gray-400);
+    max-width: 520px; margin: 0 auto 32px;
+    font-size: 15px; line-height: 1.7;
+  }
+  .cta-buttons { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; }
+  .cta-primary {
+    background: var(--white); color: var(--black);
+    padding: 16px 36px; border-radius: 8px;
+    text-decoration: none; font-weight: 700; font-size: 14px;
+    transition: all 0.3s; display: inline-flex; align-items: center; gap: 8px;
+  }
+  .cta-primary:hover { transform: translateY(-2px); box-shadow: 0 12px 40px rgba(255,255,255,0.08); }
+  .cta-secondary {
+    background: transparent; color: var(--white);
+    padding: 16px 36px; border-radius: 8px;
+    text-decoration: none; font-weight: 600; font-size: 14px;
+    border: 1px solid rgba(255,255,255,0.15);
+    transition: all 0.3s; display: inline-flex; align-items: center; gap: 8px;
+  }
+  .cta-secondary:hover { border-color: rgba(255,255,255,0.3); transform: translateY(-2px); }
+
+  footer {
+    padding: 48px 40px;
+    border-top: 1px solid rgba(255,255,255,0.04);
+    position: relative; z-index: 1;
+  }
+  .footer-inner {
+    max-width: 1280px; margin: 0 auto;
+    display: flex; justify-content: space-between; align-items: center;
+    font-size: 12px; color: var(--gray-700);
+  }
+  footer a { color: var(--gray-500); text-decoration: none; }
+  footer a:hover { color: var(--white); }
+
+  @media (max-width: 968px) {
+    .section-content.left,
+    .section-content.right { padding: 0; text-align: left; }
+    .section-content.right .section-tags { justify-content: flex-start; }
+  }
+
+  @media (max-width: 768px) {
+    .hero { padding: 20px; }
+    .hero-logo svg { height: 44px; }
+    .building-section { padding: 60px 24px; }
+    .cta-buttons { flex-direction: column; align-items: center; }
+    .footer-inner { flex-direction: column; gap: 8px; text-align: center; }
+    .section-header { padding: 80px 24px 40px; }
+  }
+
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: var(--black); }
+  ::-webkit-scrollbar-thumb { background: var(--purple); border-radius: 4px; }
+
+  #progress-bar {
+    position: fixed; top: 0; left: 0;
+    width: 0; height: 2px;
+    background: linear-gradient(90deg, var(--purple), var(--gold));
+    z-index: 100;
+    transition: width 0.1s linear;
+  }
+</style>
+</head>
+<body>
+
+<div id="progress-bar"></div>
+
+<div id="loader">
+  <div class="spinner"></div>
+  <p>Building Experience</p>
+</div>
+
+<div id="canvas-container"></div>
+
+<div class="scroll-container">
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="hero-inner">
+      <div class="hero-badge">ANAROCK Technology Solutions</div>
+      <div class="hero-logo">
+        <svg viewBox="0 0 280 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <g transform="translate(0, 8)">
+            <path d="M22 42 L38 8 L54 42 H46 L42 34 H30 L26 42 H22 Z M33 28 H39 L36 21 L33 28 Z" fill="#FFFFFF"/>
+            <path d="M56 8 H64 V42 H56 V8 Z" fill="#FFFFFF"/>
+            <path d="M68 8 H92 V14 H76 V22 H88 V28 H76 V36 H92 V42 H68 V8 Z" fill="#FFFFFF"/>
+            <path d="M96 8 H104 V36 H120 V42 H96 V8 Z" fill="#FFFFFF"/>
+            <path d="M122 8 H146 V14 H130 V22 H142 V28 H130 V42 H122 V8 Z" fill="#FFFFFF"/>
+            <path d="M150 8 H158 V42 H150 V8 Z" fill="#FFFFFF"/>
+            <path d="M162 25 C162 14.5 169 8 179 8 C189 8 196 14.5 196 25 C196 35.5 189 42 179 42 C169 42 162 35.5 162 25 Z M170 25 C170 31.5 173.5 35 179 35 C184.5 35 188 31.5 188 25 C188 18.5 184.5 15 179 15 C173.5 15 170 18.5 170 25 Z" fill="#FFFFFF"/>
+            <path d="M198 8 H222 V14 H206 V22 H218 V28 H206 V42 H198 V8 Z" fill="#FFFFFF"/>
+            <path d="M244 8 L260 42 H252 L248 34 H236 L232 42 H224 L240 8 H244 Z M241 21 L238 28 H244 L241 21 Z" fill="#984F8F"/>
+          </g>
+        </svg>
+      </div>
+      <h1>Digital Infrastructure<br>for the <span class="gradient-text">Built World</span></h1>
+      <p>A comprehensive technology ecosystem empowering developers, builders, and construction enterprises across Mumbai, Navi Mumbai, and the MMRDA region.</p>
+      <div class="higgsfield-badge" style="margin-bottom: 32px;"><span class="pulse"></span>Powered by Higgsfield AI</div>
+      <div class="hero-scroll-indicator">
+        <span>Scroll to explore</span>
+        <div class="line"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- MMRDA REGIONAL SOLUTIONS -->
+  <section class="section-header">
+    <div class="hero-badge" style="margin-bottom: 24px;">MMRDA Regional Focus</div>
+    <h2>Built for Mumbai & Navi Mumbai</h2>
+    <p>Five specialized research agents analyzed the MMRDA region — from MCGM AutoDCR and MahaRERA compliance to Navi Mumbai's airport-driven growth corridor — to identify high-impact technology solutions for Indian developers.</p>
+  </section>
+
+  <div class="regional-grid">
+    <div class="regional-card">
+      <div class="icon">🏛️</div>
+      <h3>Multi-Authority Approval Orchestration</h3>
+      <p>One command center for MMRDA, MCGM, NMMC, CIDCO, MahaRERA, SRA, and CRZ/MoEFCC workflows with deadline alerts, scrutiny remark tracking, and auto-generated dockets.</p>
+      <div class="tags"><span>MMRDA BPMS</span><span>AutoDCR</span><span>MahaRERA</span></div>
+    </div>
+    <div class="regional-card">
+      <div class="icon">📐</div>
+      <h3>FSI / TDR Scenario Planner</h3>
+      <p>Regulation-aware calculator for DCPR 2034 / UDCPR modeling base FSI, premium FSI, TDR, in-situ FSI, and product-mix scenarios with live revenue impact for Mumbai redevelopment.</p>
+      <div class="tags"><span>DCPR 2034</span><span>TDR Ledger</span><span>Redevelopment</span></div>
+    </div>
+    <div class="regional-card">
+      <div class="icon">🏗️</div>
+      <h3>Monsoon-Aware Construction ERP</h3>
+      <p>Mobile-first field platform for daily progress, material logistics, labour muster rolls, and BMC-mandated twice-monthly AutoDCR photo uploads — works offline on Navi Mumbai sites.</p>
+      <div class="tags"><span>Offline-first</span><span>Marathi/Hindi</span><span>Monsoon Risk</span></div>
+    </div>
+    <div class="regional-card">
+      <div class="icon">🤝</div>
+      <h3>SRA & Redevelopment Workflow</h3>
+      <p>Digital consent tracking, eligibility list management, transit camp allotment, and rehabilitation-vs-free-sale milestone dashboards for slum rehabilitation projects.</p>
+      <div class="tags"><span>SRA Consent</span><span>Transit Camps</span><span>Court Watch</span></div>
+    </div>
+    <div class="regional-card">
+      <div class="icon">💰</div>
+      <h3>MahaRERA-Compliant Sales CRM</h3>
+      <p>Lead-to-deal automation with RERA number/QR code tagging, carpet-area pricing, 10% booking cap enforcement, and NRI buyer workflows for Mumbai's premiumization-led market.</p>
+      <div class="tags"><span>ASTRA CRM</span><span>QR Codes</span><span>NRI Workflows</span></div>
+    </div>
+    <div class="regional-card">
+      <div class="icon">🌱</div>
+      <h3>ESG & Green Certification Hub</h3>
+      <p>Carbon, water, and energy tracking aligned with IGBC Green Homes, GRIHA, GRESB, and BRSR — designed for Navi Mumbai's greenfield smart-township developments.</p>
+      <div class="tags"><span>IGBC</span><span>GRIHA</span><span>Net Zero</span></div>
+    </div>
+  </div>
+
+  <!-- APP MOCKUP PREVIEWS -->
+  <section class="section-header">
+    <div class="hero-badge" style="margin-bottom: 24px;">Solution Previews</div>
+    <h2>Three Programmers, Three Platforms</h2>
+    <p>Top-tier software architects synthesized the regional research into concrete product briefs and interactive mockups.</p>
+  </section>
+
+  <!-- MOCKUP 1: BuildPass MMR -->
+  <section class="mockup-section">
+    <div class="mockup-container">
+      <div class="mockup-content">
+        <div class="module-tag">Module 01</div>
+        <h2>BuildPass MMR</h2>
+        <div class="tagline">“Ek single window, har approval, har report, har compliance.”</div>
+        <p>Regulatory & Construction Intelligence for Mumbai / Navi Mumbai developers. Replaces spreadsheet NOC tracking with a unified command center covering MMRDA, MCGM, NMMC, CIDCO, MahaRERA, SRA, and CRZ.</p>
+        <ul class="mockup-features">
+          <li>Unified approval command center</li>
+          <li>MahaRERA QPR auto-compliance</li>
+          <li>AutoDCR / BPMS document bridge</li>
+          <li>FSI/TDR scenario planner</li>
+          <li>Offline-first mobile field reporter</li>
+          <li>Multilingual voice assistant</li>
+        </ul>
+        <a href="#" class="mockup-cta">View Product Brief →</a>
+      </div>
+      <div class="mockup-visual">
+        <div class="mockup-screen">
+          <div class="mockup-topbar">
+            <div class="logo-pill"><span class="dot"></span> BuildPass MMR</div>
+            <div class="nav-pills"><span>Approvals</span><span class="active">Compliance</span><span>Sites</span></div>
+          </div>
+          <div class="approval-dashboard">
+            <div class="approval-card">
+              <div class="auth">MMRDA</div>
+              <div class="status green">Approved</div>
+              <div class="title">Building Permission CC</div>
+              <div class="meta">Ref: MMRDA/BP/2026/1847</div>
+              <div class="progress-bar"><div class="fill" style="width: 100%;"></div></div>
+            </div>
+            <div class="approval-card">
+              <div class="auth">MCGM AutoDCR</div>
+              <div class="status amber">Scrutiny</div>
+              <div class="title">Site Progress Report</div>
+              <div class="meta">Due: 15 Jul 2026</div>
+              <div class="progress-bar"><div class="fill" style="width: 65%;"></div></div>
+            </div>
+            <div class="approval-card">
+              <div class="auth">MahaRERA</div>
+              <div class="status red">Action Needed</div>
+              <div class="title">QPR Filing Q2-2026</div>
+              <div class="meta">Penalty risk: ₹12.4L</div>
+              <div class="progress-bar"><div class="fill" style="width: 30%;"></div></div>
+            </div>
+            <div class="approval-card">
+              <div class="auth">CIDCO / NAINA</div>
+              <div class="status green">Approved</div>
+              <div class="title">NANOC for Phase 2</div>
+              <div class="meta">Navi Mumbai Airport Zone</div>
+              <div class="progress-bar"><div class="fill" style="width: 100%;"></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- MOCKUP 2: SellSmart MMR -->
+  <section class="mockup-section">
+    <div class="mockup-container">
+      <div class="mockup-content">
+        <div class="module-tag">Module 02</div>
+        <h2>SellSmart MMR</h2>
+        <div class="tagline">“AI-driven sales, channel, and RERA-compliant bookings.”</div>
+        <p>Sales CRM & Channel Command Center tuned for Mumbai's premiumization-led market. Lead scoring, broker portals, NRI workflows, WhatsApp automation, and MahaRERA-compliant digital booking.</p>
+        <ul class="mockup-features">
+          <li>AI lead scoring & voice bots</li>
+          <li>Channel partner portal</li>
+          <li>RERA QR code & carpet pricing</li>
+          <li>NRI virtual sales room</li>
+          <li>Automated commission payouts</li>
+          <li>Demand forecasting</li>
+        </ul>
+        <a href="#" class="mockup-cta">View Product Brief →</a>
+      </div>
+      <div class="mockup-visual">
+        <div class="mockup-screen">
+          <div class="mockup-topbar">
+            <div class="logo-pill"><span class="dot"></span> SellSmart MMR</div>
+            <div class="nav-pills"><span class="active">Leads</span><span>Inventory</span><span>Partners</span></div>
+          </div>
+          <div class="crm-layout">
+            <div class="crm-sidebar">
+              <div class="stat">
+                <div class="stat-value">₹47.8Cr</div>
+                <div class="stat-label">Pipeline Value</div>
+              </div>
+              <div class="stat">
+                <div class="stat-value">18.4%</div>
+                <div class="stat-label">Conversion Rate</div>
+              </div>
+              <div class="stat">
+                <div class="stat-value">126</div>
+                <div class="stat-label">Active Brokers</div>
+              </div>
+            </div>
+            <div class="crm-leads">
+              <div class="lead-row">
+                <div class="avatar">RK</div>
+                <div class="info"><div class="name">Rohan K.</div><div class="detail">2BHK · Kharghar · NRI</div></div>
+                <div class="score">94</div>
+              </div>
+              <div class="lead-row">
+                <div class="avatar">SP</div>
+                <div class="info"><div class="name">Shreya P.</div><div class="detail">3BHK · Andheri · Walk-in</div></div>
+                <div class="score">87</div>
+              </div>
+              <div class="lead-row">
+                <div class="avatar">AM</div>
+                <div class="info"><div class="name">Amit M.</div><div class="detail">1BHK · Panvel · Portal</div></div>
+                <div class="score">72</div>
+              </div>
+              <div class="lead-row">
+                <div class="avatar">NV</div>
+                <div class="info"><div class="name">NRI Investor — Dubai</div><div class="detail">Luxury · Juhu · Channel</div></div>
+                <div class="score">91</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- MOCKUP 3: MahaDev Platform -->
+  <section class="mockup-section">
+    <div class="mockup-container">
+      <div class="mockup-content">
+        <div class="module-tag">Module 03</div>
+        <h2>MahaDev Platform</h2>
+        <div class="tagline">“Unified developer intelligence for the MMRDA region.”</div>
+        <p>API-first, GIS-centric platform connecting land aggregation, approvals, construction, sales, post-sales, and ESG. Regulation-as-code, digital twins, computer vision, and smart-city integrations.</p>
+        <ul class="mockup-features">
+          <li>GIS land pipeline & feasibility</li>
+          <li>BIM / Digital Twin viewer</li>
+          <li>Computer vision site monitoring</li>
+          <li>AI demand forecasting</li>
+          <li>Smart-city API connectors</li>
+          <li>ESG & certification hub</li>
+        </ul>
+        <a href="#" class="mockup-cta">View Platform Blueprint →</a>
+      </div>
+      <div class="mockup-visual">
+        <div class="mockup-screen">
+          <div class="mockup-topbar">
+            <div class="logo-pill"><span class="dot"></span> MahaDev Command Center</div>
+            <div class="nav-pills"><span>Portfolio</span><span class="active">Analytics</span><span>ESG</span></div>
+          </div>
+          <div class="platform-screen">
+            <div class="platform-card wide">
+              <div class="card-title">Portfolio Occupancy Velocity</div>
+              <div class="metric">78.4%</div>
+              <div class="change">+4.2% vs last quarter</div>
+              <div class="mini-chart">
+                <div class="bar" style="height: 40%;"></div>
+                <div class="bar" style="height: 55%;"></div>
+                <div class="bar" style="height: 48%;"></div>
+                <div class="bar" style="height: 70%;"></div>
+                <div class="bar" style="height: 62%;"></div>
+                <div class="bar" style="height: 84%;"></div>
+                <div class="bar" style="height: 78%;"></div>
+              </div>
+            </div>
+            <div class="platform-card">
+              <div class="card-title">Active Sites</div>
+              <div class="metric">14</div>
+              <div class="change">Navi Mumbai: 6</div>
+            </div>
+            <div class="platform-card">
+              <div class="card-title">Carbon Saved</div>
+              <div class="metric">1,240</div>
+              <div class="change">tonnes CO₂e</div>
+            </div>
+            <div class="platform-card wide">
+              <div class="card-title">AI Risk Alerts</div>
+              <div style="font-size: 12px; color: var(--gray-400); line-height: 1.6; margin-top: 8px;">
+                <div style="margin-bottom: 8px;">🟡 Monsoon delay risk at Panvel Phase 1</div>
+                <div style="margin-bottom: 8px;">🔴 MahaRERA QPR due in 3 days — Tower B</div>
+                <div>🟢 IGBC pre-certification approved — Aerocity project</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- BUILDING SECTIONS -->
+  <section class="building-section" data-floor="1">
+    <div class="section-content left">
+      <div class="section-number">01</div>
+      <div class="section-tag">Foundation</div>
+      <h2>Construction Project Management</h2>
+      <p>End-to-end project oversight with AI-driven scheduling, real-time budget tracking, integrated BIM coordination, and mobile-first field access. RFI/submittal management, change order control, and automated daily logs — all unified in one platform.</p>
+      <div class="section-tags">
+        <span>Procore-grade</span>
+        <span>BIM 4D/5D</span>
+        <span class="gold">AI Scheduling</span>
+        <span>Mobile-first</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="building-section" data-floor="2">
+    <div class="section-content right">
+      <div class="section-number">02</div>
+      <div class="section-tag">Structure</div>
+      <h2>Enterprise ERP & Job Costing</h2>
+      <p>Real-time financial control across portfolios — automated WIP tracking, subcontractor pay applications, lien waiver management, and multi-entity consolidation. Purpose-built for construction accounting with GAAP/IND AS compliance.</p>
+      <div class="section-tags">
+        <span>Sage-class</span>
+        <span>WIP Reports</span>
+        <span>Multi-entity</span>
+        <span class="gold">Automation</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="building-section" data-floor="3">
+    <div class="section-content left">
+      <div class="section-number">03</div>
+      <div class="section-tag">Intelligence</div>
+      <h2>AI-Powered Cost Intelligence</h2>
+      <p>Computer vision analyzes architectural plans to generate detailed estimates in minutes. Predictive models flag cost overruns and schedule risks before they escalate. Historical data benchmarking for more accurate bidding.</p>
+      <div class="section-tags">
+        <span class="gold">Computer Vision</span>
+        <span class="gold">Predictive Analytics</span>
+        <span>Automated Takeoffs</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="building-section" data-floor="4">
+    <div class="section-content right">
+      <div class="section-number">04</div>
+      <div class="section-tag">Operations</div>
+      <h2>Field Operations & Site Management</h2>
+      <p>Mobile-first daily logs with GPS-stamped timecards, toolbox talks, punch lists, and quality inspections. Works offline on remote sites. Automated photo documentation with progress tracking against BIM models.</p>
+      <div class="section-tags">
+        <span>Raken-class</span>
+        <span>Offline Mode</span>
+        <span>Photo Docs</span>
+        <span>Punch Lists</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="building-section" data-floor="5">
+    <div class="section-content left">
+      <div class="section-number">05</div>
+      <div class="section-tag">Compliance</div>
+      <h2>Document Control & Regulatory Compliance</h2>
+      <p>Centralized drawing management with auto-hyperlinking, version control, and complete audit trails. Embedded workflows for RERA filings, ESG reporting (GRESB/GRI), safety compliance, and quality assurance.</p>
+      <div class="section-tags">
+        <span>Version Control</span>
+        <span>RERA Compliance</span>
+        <span class="gold">ESG Tracking</span>
+        <span>Audit Trail</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="building-section" data-floor="6">
+    <div class="section-content right">
+      <div class="section-number">06</div>
+      <div class="section-tag">Design</div>
+      <h2>Building Information Modeling (BIM) & Digital Twins</h2>
+      <p>Collaborative 3D design coordination, clash detection, 4D scheduling, and 5D cost estimation. Create living digital twins that persist through construction into facilities management for the building's entire lifecycle.</p>
+      <div class="section-tags">
+        <span>Autodesk-class</span>
+        <span>3D Coordination</span>
+        <span class="gold">Digital Twin</span>
+        <span>4D/5D BIM</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="building-section" data-floor="7">
+    <div class="section-content left">
+      <div class="section-number">07</div>
+      <div class="section-tag">Supply Chain</div>
+      <h2>Procurement & Materials Management</h2>
+      <p>Real-time material tracking, purchase order automation, trade scheduling, and vendor collaboration. Integrated bid management with subcontractor prequalification. Just-in-time delivery coordination to reduce waste.</p>
+      <div class="section-tags">
+        <span>PO Automation</span>
+        <span>Trade Scheduling</span>
+        <span>Bid Management</span>
+        <span>Vendor Portal</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="building-section" data-floor="8">
+    <div class="section-content right">
+      <div class="section-number">08</div>
+      <div class="section-tag">Revenue</div>
+      <h2>Sales CRM & Channel Management</h2>
+      <p>Powered by ASTRA — Anarock's proprietary AI-driven CRM. Lead-to-deal automation, channel partner management, digital sales rooms, virtual tours, and buyer sentiment analysis. 9 AI tools purpose-built for real estate sales.</p>
+      <div class="section-tags">
+        <span class="gold">AI Sales</span>
+        <span>Channel Mgmt</span>
+        <span>Digital Sales</span>
+        <span>ASTRA CRM</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="building-section" data-floor="9">
+    <div class="section-content left">
+      <div class="section-number">09</div>
+      <div class="section-tag">Intelligence</div>
+      <h2>Market Intelligence & Data Analytics</h2>
+      <p>Real-time market dashboards, competitor benchmarking, demand forecasting, and granular location analytics. Powered by Anarock's research division — 2,500+ reports covering every major Indian real estate market.</p>
+      <div class="section-tags">
+        <span class="gold">Predictive Models</span>
+        <span>Demand Forecasting</span>
+        <span>Location Analytics</span>
+        <span>Benchmarking</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="building-section" data-floor="10">
+    <div class="section-content right">
+      <div class="section-number">10</div>
+      <div class="section-tag">Sustainability</div>
+      <h2>ESG & Sustainability Management</h2>
+      <p>Track carbon footprint, energy performance, water management, and waste diversion across construction and operations. Automated ESG reporting aligned with GRESB, GRI, and IREDA standards. Green certification management.</p>
+      <div class="section-tags">
+        <span>GRESB</span>
+        <span>Carbon Tracking</span>
+        <span class="gold">Green Certifications</span>
+        <span>ESG Reporting</span>
+      </div>
+    </div>
+  </section>
+
+  <div style="height:60vh;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:16px;padding:40px;">
+    <div style="width:1px;height:120px;background:linear-gradient(to bottom,var(--purple),transparent);"></div>
+    <p style="color:var(--gray-700);font-size:11px;letter-spacing:2px;text-transform:uppercase;">The complete stack</p>
+  </div>
+
+  <section class="cta-section">
+    <div>
+      <h2>Ready to Build the<br>Future of Real Estate?</h2>
+      <p>Join 2,500+ professionals transforming their development operations through Anarock's technology ecosystem.</p>
+      <div class="cta-buttons">
+        <a href="mailto:technology@anarock.com" class="cta-primary">Schedule a Consultation →</a>
+        <a href="https://www.anarock.com" target="_blank" class="cta-secondary">Visit Anarock.com</a>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <div class="footer-inner">
+      <span>© 2026 ANAROCK Property Consultants Pvt Ltd. All rights reserved.</span>
+      <span><a href="https://www.anarock.com/privacy-policy">Privacy</a> · <a href="https://www.anarock.com/terms-of-use">Terms</a> · <a href="https://www.anarock.com/about/contact-us">Contact</a></span>
+    </div>
+  </footer>
+
+</div>
+
+<script>
+  // === LOADER ===
+  window.addEventListener('load', () => {
+    setTimeout(() => { document.getElementById('loader').classList.add('hidden'); }, 1200);
+  });
+
+  // === THREE.JS SCENE ===
+  const container = document.getElementById('canvas-container');
+  const scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x0A0A0A);
+  scene.fog = new THREE.FogExp2(0x0A0A0A, 0.035);
+
+  const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 200);
+  camera.position.set(18, 8, 18);
+
+  const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.15;
+  container.appendChild(renderer.domElement);
+
+  // === ENVIRONMENT MAP ===
+  const pmremGenerator = new THREE.PMREMGenerator(renderer);
+  pmremGenerator.compileEquirectangularShader();
+  const envScene = new THREE.Scene();
+  envScene.background = new THREE.Color(0x050510);
+  const envTexture = pmremGenerator.fromScene(envScene).texture;
+  scene.environment = envTexture;
+
+  // === LIGHTING ===
+  const ambient = new THREE.AmbientLight(0x404060, 0.35);
+  scene.add(ambient);
+
+  const hemiLight = new THREE.HemisphereLight(0xaaccff, 0x1a1020, 0.4);
+  scene.add(hemiLight);
+
+  const mainLight = new THREE.DirectionalLight(0xfff4e6, 1.6);
+  mainLight.position.set(12, 24, 10);
+  mainLight.castShadow = true;
+  mainLight.shadow.mapSize.width = 2048;
+  mainLight.shadow.mapSize.height = 2048;
+  mainLight.shadow.camera.near = 0.5;
+  mainLight.shadow.camera.far = 80;
+  mainLight.shadow.camera.left = -25;
+  mainLight.shadow.camera.right = 25;
+  mainLight.shadow.camera.top = 25;
+  mainLight.shadow.camera.bottom = -25;
+  scene.add(mainLight);
+
+  const purpleLight = new THREE.DirectionalLight(0x984F8F, 0.5);
+  purpleLight.position.set(-15, 8, -15);
+  scene.add(purpleLight);
+
+  const goldLight = new THREE.DirectionalLight(0xC9A84C, 0.35);
+  goldLight.position.set(-10, 12, 15);
+  scene.add(goldLight);
+
+  const cityGlow = new THREE.PointLight(0xffaa55, 0.4, 40);
+  cityGlow.position.set(20, 2, -20);
+  scene.add(cityGlow);
+
+  // === GROUND ===
+  const groundGeo = new THREE.CircleGeometry(60, 64);
+  const groundMat = new THREE.MeshStandardMaterial({
+    color: 0x080808,
+    roughness: 0.75,
+    metalness: 0.25,
+  });
+  const ground = new THREE.Mesh(groundGeo, groundMat);
+  ground.rotation.x = -Math.PI / 2;
+  ground.position.y = -0.02;
+  ground.receiveShadow = true;
+  scene.add(ground);
+
+  // === CITY SKYLINE BACKDROP ===
+  const cityGroup = new THREE.Group();
+  const cityMat = new THREE.MeshStandardMaterial({
+    color: 0x111116,
+    roughness: 0.6,
+    metalness: 0.4,
+    emissive: 0x050510,
+    emissiveIntensity: 0.2
+  });
+  const cityGlowMat = new THREE.MeshBasicMaterial({ color: 0xffcc66, transparent: true, opacity: 0.08 });
+
+  for (let i = 0; i < 45; i++) {
+    const h = 2 + Math.random() * 10;
+    const w = 0.8 + Math.random() * 1.5;
+    const d = 0.8 + Math.random() * 1.5;
+    const building = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), cityMat);
+    const angle = Math.random() * Math.PI * 2;
+    const radius = 22 + Math.random() * 25;
+    building.position.set(Math.cos(angle) * radius, h / 2, Math.sin(angle) * radius);
+    building.castShadow = false;
+    building.receiveShadow = true;
+    cityGroup.add(building);
+
+    // Random window lights
+    if (Math.random() > 0.5) {
+      const light = new THREE.Mesh(new THREE.PlaneGeometry(w * 0.3, h * 0.15), cityGlowMat);
+      light.position.set(Math.cos(angle) * radius + 0.02, h * 0.3 + Math.random() * h * 0.4, Math.sin(angle) * radius + 0.02);
+      light.lookAt(0, light.position.y, 0);
+      cityGroup.add(light);
+    }
+  }
+  scene.add(cityGroup);
+
+  // === BUILDING DATA ===
+  const floorData = [
+    { name: 'FOUNDATION', label: 'Project Management', color: 0x5C2E56 },
+    { name: 'STRUCTURE', label: 'ERP & Costing', color: 0x6B3A63 },
+    { name: 'INTELLIGENCE', label: 'AI Cost Intel', color: 0x7A4670 },
+    { name: 'OPERATIONS', label: 'Field Operations', color: 0x88527D },
+    { name: 'COMPLIANCE', label: 'Compliance', color: 0x965E8A },
+    { name: 'DESIGN', label: 'BIM & Digital Twin', color: 0xA46A97 },
+    { name: 'SUPPLY CHAIN', label: 'Procurement', color: 0xA9769E },
+    { name: 'REVENUE', label: 'Sales CRM', color: 0xB482A9 },
+    { name: 'INTELLIGENCE', label: 'Market Analytics', color: 0xBF8EB4 },
+    { name: 'SUSTAINABILITY', label: 'ESG & Sustainability', color: 0xCA9ABF },
+  ];
+
+  const buildingGroup = new THREE.Group();
+  scene.add(buildingGroup);
+
+  const floors = [];
+  const floorHeight = 0.9;
+  const baseWidth = 4.2;
+  const baseDepth = 3.2;
+  const taperFactor = 0.72;
+
+  // Premium glass material
+  const glassMaterial = new THREE.MeshPhysicalMaterial({
+    color: 0x112233,
+    metalness: 0.85,
+    roughness: 0.08,
+    clearcoat: 1.0,
+    clearcoatRoughness: 0.05,
+    reflectivity: 1.0,
+    envMap: envTexture,
+    envMapIntensity: 1.2,
+  });
+
+  const frameMaterial = new THREE.MeshStandardMaterial({
+    color: 0x2a2a35,
+    metalness: 0.7,
+    roughness: 0.3,
+  });
+
+  const accentMaterial = new THREE.MeshStandardMaterial({
+    color: 0xC9A84C,
+    metalness: 0.9,
+    roughness: 0.2,
+    emissive: 0xC9A84C,
+    emissiveIntensity: 0.15,
+  });
+
+  const purpleAccentMaterial = new THREE.MeshStandardMaterial({
+    color: 0x984F8F,
+    metalness: 0.6,
+    roughness: 0.3,
+    emissive: 0x984F8F,
+    emissiveIntensity: 0.2,
+  });
+
+  // Window light material
+  const windowLightMat = new THREE.MeshBasicMaterial({
+    color: 0xffeebb,
+    transparent: true,
+    opacity: 0.85,
+  });
+
+  function createFloor(index, total) {
+    const group = new THREE.Group();
+    const progress = index / (total - 1);
+    const width = baseWidth * (1 - progress * (1 - taperFactor));
+    const depth = baseDepth * (1 - progress * (1 - taperFactor));
+
+    // Main glass volume
+    const glass = new THREE.Mesh(new THREE.BoxGeometry(width, floorHeight * 0.92, depth), glassMaterial);
+    glass.castShadow = true;
+    glass.receiveShadow = true;
+    group.add(glass);
+
+    // Floor slab frames
+    const frameTop = new THREE.Mesh(new THREE.BoxGeometry(width + 0.08, 0.04, depth + 0.08), frameMaterial);
+    frameTop.position.y = floorHeight * 0.46;
+    group.add(frameTop);
+
+    const frameBottom = new THREE.Mesh(new THREE.BoxGeometry(width + 0.08, 0.04, depth + 0.08), frameMaterial);
+    frameBottom.position.y = -floorHeight * 0.46;
+    group.add(frameBottom);
+
+    // Corner columns
+    const colSize = 0.14;
+    for (let x of [-width/2, width/2]) {
+      for (let z of [-depth/2, depth/2]) {
+        const col = new THREE.Mesh(new THREE.BoxGeometry(colSize, floorHeight, colSize), frameMaterial);
+        col.position.set(x, 0, z);
+        col.castShadow = true;
+        group.add(col);
+      }
+    }
+
+    // Window grid with random lights
+    const cols = 5;
+    const rows = 2;
+    const winW = width * 0.75 / cols;
+    const winH = floorHeight * 0.55 / rows;
+    for (let c = 0; c < cols; c++) {
+      for (let r = 0; r < rows; r++) {
+        const xPos = -width * 0.375 + (c + 0.5) * winW;
+        const yPos = -floorHeight * 0.2 + r * (winH + 0.08);
+        // Front windows
+        if (Math.random() > 0.35) {
+          const win = new THREE.Mesh(new THREE.PlaneGeometry(winW * 0.75, winH * 0.7), windowLightMat);
+          win.position.set(xPos, yPos, depth / 2 + 0.02);
+          group.add(win);
+        }
+        // Back windows
+        if (Math.random() > 0.45) {
+          const winB = new THREE.Mesh(new THREE.PlaneGeometry(winW * 0.75, winH * 0.7), windowLightMat);
+          winB.position.set(xPos, yPos, -depth / 2 - 0.02);
+          winB.rotation.y = Math.PI;
+          group.add(winB);
+        }
+      }
+    }
+
+    // Accent band every 3 floors
+    if (index % 3 === 2) {
+      const band = new THREE.Mesh(new THREE.BoxGeometry(width + 0.12, 0.03, depth + 0.12), accentMaterial);
+      band.position.y = floorHeight * 0.48;
+      group.add(band);
+    }
+
+    return group;
+  }
+
+  for (let i = 0; i < floorData.length; i++) {
+    const floorGroup = createFloor(i, floorData.length);
+    const yPos = i * floorHeight;
+    floorGroup.position.y = yPos;
+    floorGroup.scale.set(0.1, 0, 0.1);
+    buildingGroup.add(floorGroup);
+    floors.push(floorGroup);
+  }
+
+  // === CROWN & SPIRE ===
+  const crownGeo = new THREE.CylinderGeometry(0.5, 0.8, 0.6, 8);
+  const crown = new THREE.Mesh(crownGeo, purpleAccentMaterial);
+  crown.position.set(0, floorData.length * floorHeight + 0.5, 0);
+  crown.castShadow = true;
+  buildingGroup.add(crown);
+
+  const spireGeo = new THREE.ConeGeometry(0.25, 1.2, 8);
+  const spire = new THREE.Mesh(spireGeo, accentMaterial);
+  spire.position.set(0, floorData.length * floorHeight + 1.4, 0);
+  spire.castShadow = true;
+  buildingGroup.add(spire);
+
+  const beaconLight = new THREE.PointLight(0xC9A84C, 0.8, 8);
+  beaconLight.position.set(0, floorData.length * floorHeight + 2.2, 0);
+  scene.add(beaconLight);
+
+  // === PARTICLES ===
+  const particleCount = 1200;
+  const particlesGeo = new THREE.BufferGeometry();
+  const positions = new Float32Array(particleCount * 3);
+  for (let i = 0; i < particleCount * 3; i += 3) {
+    positions[i] = (Math.random() - 0.5) * 60;
+    positions[i+1] = Math.random() * 25;
+    positions[i+2] = (Math.random() - 0.5) * 60;
+  }
+  particlesGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+  const particlesMat = new THREE.PointsMaterial({
+    color: 0x984F8F,
+    size: 0.04,
+    transparent: true,
+    opacity: 0.35,
+    blending: THREE.AdditiveBlending,
+    sizeAttenuation: true,
+  });
+  const particles = new THREE.Points(particlesGeo, particlesMat);
+  scene.add(particles);
+
+  // === SCROLL STATE ===
+  let maxScroll = 1;
+  let targetProgress = 0;
+  let currentProgress = 0;
+  let buildingY = 0;
+
+  // === SCROLL HANDLER ===
+  function updateScroll() {
+    const scrollY = window.scrollY;
+    const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+    maxScroll = Math.max(docHeight, 1);
+    targetProgress = Math.min(scrollY / maxScroll, 1);
+    document.getElementById('progress-bar').style.width = (targetProgress * 100) + '%';
+  }
+
+  window.addEventListener('scroll', updateScroll);
+  window.addEventListener('resize', () => {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    updateScroll();
+  });
+
+  // === CAMERA PATH ===
+  function updateCamera(progress) {
+    const angle = -0.3 + progress * 1.1;
+    const radius = 16 - progress * 4;
+    const height = 4 + progress * (floorData.length * floorHeight * 0.65);
+    camera.position.x = Math.sin(angle) * radius;
+    camera.position.z = Math.cos(angle) * radius;
+    camera.position.y = height;
+    camera.lookAt(0, height * 0.5, 0);
+  }
+
+  // === BUILDING CONSTRUCTION ===
+  function updateBuilding(progress) {
+    const totalHeight = floorData.length * floorHeight;
+    const builtHeight = progress * totalHeight;
+
+    for (let i = 0; i < floorData.length; i++) {
+      const floorBottom = i * floorHeight;
+      const floorTop = (i + 1) * floorHeight;
+
+      if (builtHeight >= floorTop) {
+        floors[i].scale.set(1, 1, 1);
+        const dist = (builtHeight - floorTop) / totalHeight;
+        const opacity = Math.max(0.85, Math.min(1, 0.95 + dist * 0.1));
+        floors[i].children.forEach(child => {
+          if (child.material && child.material.opacity !== undefined) {
+            child.material.opacity = Math.min(child.material.opacity || 1, opacity);
+          }
+        });
+      } else if (builtHeight > floorBottom) {
+        const fProgress = (builtHeight - floorBottom) / floorHeight;
+        floors[i].scale.set(fProgress, fProgress, fProgress);
+      } else {
+        floors[i].scale.set(0.1, 0, 0.1);
+      }
+    }
+
+    const crownScale = Math.max(0, Math.min(1, (builtHeight - totalHeight + 1.5) / 1.5));
+    crown.scale.set(crownScale, crownScale, crownScale);
+    spire.scale.set(crownScale, crownScale, crownScale);
+    beaconLight.intensity = crownScale * 0.8;
+  }
+
+  // === ANIMATION LOOP ===
+  let time = 0;
+  function animate() {
+    requestAnimationFrame(animate);
+    time += 0.005;
+
+    currentProgress += (targetProgress - currentProgress) * 0.055;
+
+    buildingGroup.rotation.y = Math.sin(time * 0.3) * 0.08 + currentProgress * 0.2;
+    buildingGroup.position.y = Math.sin(time * 0.5) * 0.15;
+
+    updateCamera(currentProgress);
+    updateBuilding(currentProgress);
+
+    // Particle drift
+    const pos = particles.geometry.attributes.position.array;
+    for (let i = 0; i < pos.length; i += 3) {
+      pos[i+1] -= 0.004;
+      if (pos[i+1] < -1) pos[i+1] = 24;
+    }
+    particles.geometry.attributes.position.needsUpdate = true;
+
+    // City glow pulse
+    cityGlow.intensity = 0.3 + Math.sin(time * 0.8) * 0.15;
+
+    renderer.render(scene, camera);
+  }
+
+  animate();
+  updateScroll();
+
+  // === INTERSECTION OBSERVER ===
+  const sectionEls = document.querySelectorAll('.building-section');
+  const sectionObserver = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('visible');
+      }
+    });
+  }, { threshold: 0.3 });
+  sectionEls.forEach(el => sectionObserver.observe(el));
+
+  console.log('🏗️ ANAROCK MMRDA - Digital Infrastructure for the Built World');
+  console.log('🔧 10 Software Pillars · 3 Solution Modules · 3D Interactive Tower');
+</script>
+
+</body>
+</html>
